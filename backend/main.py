@@ -16,23 +16,23 @@ async def lifespan(app: FastAPI):
     Runs on startup — preloads the sign model so the first WebSocket
     connection doesn't have a 3-second delay loading TF.
     """
-    print("🚀 AccessAI backend starting...")
+    print("AccessAI backend starting...")
 
     # Pre-warm sign model
     try:
         from ml.sign_model import get_model
         get_model()
-        print("✅ Sign language model loaded and ready")
+        print("Sign language model loaded and ready")
     except Exception as e:
-        print(f"⚠️  Sign model not loaded (place sign_model.h5 in models/): {e}")
+        print(f"Sign model not loaded (place sign_model.h5 in models/): {e}")
 
     # Create all DB tables
     Base.metadata.create_all(bind=engine)
-    print("✅ Database tables ready")
+    print("Database tables ready")
 
     yield  # server runs here
 
-    print("👋 AccessAI backend shutting down")
+    print("AccessAI backend shutting down")
 
 
 app = FastAPI(
@@ -85,7 +85,7 @@ async def ws_sign(websocket: WebSocket):
     Message format OUT: { "sign": "hello", "confidence": 0.94 }
     """
     await websocket.accept()
-    print("🔌 WebSocket client connected")
+    print("WebSocket client connected")
     try:
         while True:
             data = await websocket.receive_json()
@@ -100,9 +100,9 @@ async def ws_sign(websocket: WebSocket):
             await websocket.send_json(result)
 
     except WebSocketDisconnect:
-        print("🔌 WebSocket client disconnected")
+        print("WebSocket client disconnected")
     except Exception as e:
-        print(f"❌ WebSocket error: {e}")
+        print(f"WebSocket error: {e}")
         try:
             await websocket.send_json({"error": str(e)})
         except Exception:

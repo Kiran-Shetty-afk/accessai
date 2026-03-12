@@ -10,7 +10,7 @@ import models, schemas
 router = APIRouter()
 
 # whisper-large-v3 is most accurate; falls back gracefully on free tier
-HF_URL = "https://api-inference.huggingface.co/models/openai/whisper-large-v3"
+HF_URL = "https://router.huggingface.co/hf-inference/models/openai/whisper-large-v3"
 HF_HEADERS = {"Authorization": f"Bearer {os.getenv('HF_API_TOKEN')}"}
 
 ALLOWED_AUDIO = {"audio/mpeg", "audio/wav", "audio/ogg", "audio/webm",
@@ -40,7 +40,8 @@ async def call_hf_whisper(audio_bytes: bytes, retry: int = 0) -> str:
         return await call_hf_whisper(audio_bytes, retry + 1)
 
     if r.status_code != 200:
-        raise HTTPException(status_code=502, detail=f"HuggingFace Whisper error: {r.text}")
+        detail = r.text[:300].replace("\n", " ")
+        raise HTTPException(status_code=502, detail=f"HuggingFace Whisper error: {detail}")
 
     result = r.json()
 
@@ -85,7 +86,7 @@ async def voice(
         raise HTTPException(status_code=400, detail="Audio must be under 25 MB")
 
     # Cache check — same audio = same transcript
-    cache_key = hashlib.sha256(audio_bytes).hexdigest()
+    cache_key = hashlib.sha256(b"voice:" + audio_bytes).hexdigest()
     cached = (
         db.query(models.APICache)
         .filter(models.APICache.input_hash == cache_key)

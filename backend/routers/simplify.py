@@ -9,20 +9,32 @@ import models, schemas
 
 router = APIRouter()
 
-HF_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2"
+HF_URL = "https://router.huggingface.co/v1/chat/completions"
 HF_HEADERS = {"Authorization": f"Bearer {os.getenv('HF_API_TOKEN')}"}
+HF_MODEL = os.getenv("HF_TEXT_MODEL", "Qwen/Qwen2.5-72B-Instruct:novita")
 
 
 async def call_hf_simplify(text: str, grade_level: int) -> str:
-    """Call Mistral on HuggingFace. Retries on 503 (model cold-starting)."""
-    prompt = (
-        f"[INST] Rewrite the following text so a Grade {grade_level} student can "
-        f"understand it. Use short sentences. Keep all facts. "
-        f"Output only the rewritten text.\n\n{text} [/INST]"
-    )
+    """Call a supported chat-completions model on HuggingFace."""
     payload = {
-        "inputs": prompt,
-        "parameters": {"max_new_tokens": 512, "temperature": 0.3},
+        "model": HF_MODEL,
+        "messages": [
+            {
+                "role": "system",
+                "content": (
+                    "You rewrite text in plain language. Keep all facts, use short "
+                    "sentences, and output only the rewritten text."
+                ),
+            },
+            {
+                "role": "user",
+                "content": (
+                    f"Rewrite this so a Grade {grade_level} student can understand it:\n\n{text}"
+                ),
+            },
+        ],
+        "max_tokens": 512,
+        "temperature": 0.3,
     }
     async with httpx.AsyncClient(timeout=60) as client:
         r = await client.post(HF_URL, headers=HF_HEADERS, json=payload)
@@ -33,15 +45,13 @@ async def call_hf_simplify(text: str, grade_level: int) -> str:
         return await call_hf_simplify(text, grade_level)
 
     if r.status_code != 200:
-        raise HTTPException(status_code=502, detail=f"HuggingFace error: {r.text}")
+        detail = r.text[:300].replace("\n", " ")
+        raise HTTPException(status_code=502, detail=f"HuggingFace error: {detail}")
 
     result = r.json()
-    # Mistral returns: [{"generated_text": "<full prompt + answer>"}]
-    generated = result[0]["generated_text"]
-    # Strip the prompt prefix — only return the rewritten text
-    if "[/INST]" in generated:
-        generated = generated.split("[/INST]")[-1].strip()
-    return generated
+    message = result["choices"][0]["message"]
+    generated = (message.get("content") or message.get("reasoning_content") or "").strip()
+    return generated.strip('"')
 
 
 @router.post("/simplify", response_model=schemas.SimplifyResponse)
@@ -62,7 +72,9 @@ async def simplify(body: schemas.SimplifyRequest, db: Session = Depends(get_db))
         raise HTTPException(status_code=400, detail="Text exceeds 5000 character limit")
 
     # Step 1: Check cache
-    cache_key = hashlib.sha256(f"{body.text}{body.grade_level}".encode()).hexdigest()
+    cache_key = hashlib.sha256(
+        f"simplify:{body.grade_level}:{body.text}".encode()
+    ).hexdigest()
     cached = db.query(models.APICache).filter(models.APICache.input_hash == cache_key).first()
     if cached:
         return schemas.SimplifyResponse(

@@ -23,9 +23,9 @@ AccessAI is a backend API that powers accessibility features for users with disa
 | **PostgreSQL** | Database — stores users, preferences, cache, sign logs |
 | **SQLAlchemy** | ORM — Python classes mapped to DB tables |
 | **Pydantic** | Request/response validation and schemas |
-| **HuggingFace Inference API** | Runs AI models (Mistral, BLIP, Whisper) |
+| **HuggingFace Router / Inference Providers** | Runs text, vision, and speech models |
 | **python-jose** | JWT token creation and verification |
-| **bcrypt / passlib** | Secure password hashing |
+| **bcrypt** | Secure password hashing |
 | **httpx** | Async HTTP client for HuggingFace API calls |
 | **TensorFlow / NumPy** | Sign language model inference |
 | **python-dotenv** | Loads `.env` environment variables |
@@ -42,7 +42,6 @@ sqlalchemy
 psycopg2-binary
 python-jose[cryptography]
 bcrypt
-passlib[bcrypt]
 python-multipart
 httpx
 python-dotenv
@@ -142,7 +141,7 @@ Passwords are hashed with **bcrypt**. Authentication uses **JWT tokens** (24 hou
 ### 2. Text Simplifier (`/api/simplify`)
 - Takes any complex text (max 5000 chars)
 - Rewrites it at Grade 3, 5, or 8 reading level
-- Uses **Mistral-7B-Instruct** via HuggingFace
+- Uses a configurable HuggingFace chat model
 - Caches results in PostgreSQL (SHA-256 hash key)
 - Returns word count before and after
 
@@ -153,7 +152,7 @@ Passwords are hashed with **bcrypt**. Authentication uses **JWT tokens** (24 hou
 ### 3. Image Describer (`/api/describe`)
 - Accepts an uploaded image (JPEG, PNG, WebP, GIF — max 5MB)
 - Returns a detailed AI-generated text description
-- Uses **Salesforce BLIP Large** via HuggingFace
+- Uses a configurable HuggingFace vision model
 - Results cached in PostgreSQL
 
 **Who it helps:** Blind and visually impaired users who cannot see images on websites or documents.
@@ -232,6 +231,8 @@ Create a file named `.env` in the `backend/` folder:
 ```dotenv
 DATABASE_URL=postgresql://postgres:yourpassword@localhost:5432/accessai
 HF_API_TOKEN=hf_your_token_here
+HF_TEXT_MODEL=Qwen/Qwen2.5-72B-Instruct:novita
+HF_VISION_MODEL=CohereLabs/aya-vision-32b:cohere
 SECRET_KEY=your_64_char_random_string
 ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=1440
@@ -239,6 +240,8 @@ ACCESS_TOKEN_EXPIRE_MINUTES=1440
 
 - `DATABASE_URL` — your local PostgreSQL connection string
 - `HF_API_TOKEN` — get free token from https://huggingface.co → Settings → Access Tokens
+- `HF_TEXT_MODEL` — chat model used by `/api/simplify`
+- `HF_VISION_MODEL` — vision model used by `/api/describe`
 - `SECRET_KEY` — generate with: `python -c "import secrets; print(secrets.token_hex(32))"`
 
 ### Step 5 — Create PostgreSQL database
@@ -254,6 +257,11 @@ Open browser and visit:
 - http://localhost:8000/health → should return `{"status":"ok"}`
 - http://localhost:8000/docs → interactive API explorer
 
+Or run the backend smoke test:
+```bash
+python smoke_test.py
+```
+
 ---
 
 ## API Endpoints Summary
@@ -265,8 +273,8 @@ Open browser and visit:
 | POST | `/auth/login` | No | Login, get JWT token |
 | GET | `/auth/me` | JWT | Get current user |
 | PUT | `/auth/preferences` | JWT | Save accessibility settings |
-| POST | `/api/simplify` | No | Simplify text (Mistral AI) |
-| POST | `/api/describe` | No | Describe image (BLIP AI) |
+| POST | `/api/simplify` | No | Simplify text (chat model) |
+| POST | `/api/describe` | No | Describe image (vision model) |
 | POST | `/api/voice` | No | Transcribe audio (Whisper AI) |
 | POST | `/api/sign/predict` | No | Predict sign from landmarks |
 | WS | `/ws/sign` | No | Real-time sign detection |
@@ -279,6 +287,8 @@ Open browser and visit:
 |---|---|
 | `DATABASE_URL` | PostgreSQL connection string |
 | `HF_API_TOKEN` | HuggingFace API token (free) |
+| `HF_TEXT_MODEL` | Hugging Face chat model for `/api/simplify` |
+| `HF_VISION_MODEL` | Hugging Face vision model for `/api/describe` |
 | `SECRET_KEY` | JWT signing secret (keep private!) |
 | `ALGORITHM` | JWT algorithm — always `HS256` |
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | Token expiry — `1440` = 24 hours |

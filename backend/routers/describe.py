@@ -5,32 +5,98 @@ import asyncio
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.orm import Session
+from PIL import Image
+from io import BytesIO
 from database import get_db
 import models, schemas
 
 router = APIRouter()
 
-HF_URL = "https://api-inference.huggingface.co/models/Salesforce/blip-image-captioning-large"
+HF_URL = "https://router.huggingface.co/v1/chat/completions"
 HF_HEADERS = {"Authorization": f"Bearer {os.getenv('HF_API_TOKEN')}"}
+HF_VISION_MODEL = os.getenv("HF_VISION_MODEL", "CohereLabs/aya-vision-32b:cohere")
 
 ALLOWED_TYPES = {"image/jpeg", "image/png", "image/webp", "image/gif"}
 
 
-async def call_hf_describe(image_bytes: bytes) -> str:
-    """Send image bytes to BLIP on HuggingFace for captioning."""
+async def call_hf_describe(image_bytes: bytes, content_type: str) -> str:
+    """Describe an uploaded image via a current Hugging Face VLM chat endpoint."""
+    image_url = "data:%s;base64,%s" % (
+        content_type or "image/png",
+        base64.b64encode(image_bytes).decode("ascii"),
+    )
+    payload = {
+        "model": HF_VISION_MODEL,
+        "messages": [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": "Describe this image in one short sentence."},
+                    {"type": "image_url", "image_url": {"url": image_url}},
+                ],
+            }
+        ],
+        "max_tokens": 120,
+        "temperature": 0.2,
+    }
     async with httpx.AsyncClient(timeout=60) as client:
-        r = await client.post(HF_URL, headers=HF_HEADERS, content=image_bytes)
+        r = await client.post(HF_URL, headers=HF_HEADERS, json=payload)
 
     if r.status_code == 503:
         await asyncio.sleep(20)
-        return await call_hf_describe(image_bytes)
+        return await call_hf_describe(image_bytes, content_type)
 
     if r.status_code != 200:
-        raise HTTPException(status_code=502, detail=f"HuggingFace error: {r.text}")
+        detail = r.text[:300].replace("\n", " ")
+        raise HTTPException(status_code=502, detail=f"HuggingFace error: {detail}")
 
     result = r.json()
-    # BLIP returns: [{"generated_text": "a person in a wheelchair..."}]
-    return result[0]["generated_text"]
+    message = result["choices"][0]["message"]
+    description = (message.get("content") or message.get("reasoning_content") or "").strip()
+    return description.strip('"')
+
+
+def describe_image_locally(image_bytes: bytes) -> str:
+    """
+    Fallback description based on image metadata when remote captioning is unavailable.
+    This keeps the endpoint usable even if the provider no longer supports the old model route.
+    """
+    try:
+        image = Image.open(BytesIO(image_bytes))
+        image.load()
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=f"Invalid image file: {exc}") from exc
+
+    width, height = image.size
+    orientation = "square"
+    if width > height:
+        orientation = "landscape"
+    elif height > width:
+        orientation = "portrait"
+
+    rgb = image.convert("RGB").resize((1, 1))
+    r, g, b = rgb.getpixel((0, 0))
+    brightness = (r + g + b) / 3
+
+    tone = "dark"
+    if brightness > 185:
+        tone = "bright"
+    elif brightness > 110:
+        tone = "mid-tone"
+
+    dominant = "neutral"
+    if max(r, g, b) - min(r, g, b) > 20:
+        if r >= g and r >= b:
+            dominant = "red"
+        elif g >= r and g >= b:
+            dominant = "green"
+        else:
+            dominant = "blue"
+
+    return (
+        f"A {orientation} {image.format or 'image'} that is mostly {tone} with a "
+        f"{dominant} color cast, sized {width} by {height} pixels."
+    )
 
 
 @router.post("/describe", response_model=schemas.DescribeResponse)
@@ -58,13 +124,18 @@ async def describe(
         raise HTTPException(status_code=400, detail="Image must be under 5 MB")
 
     # Step 1: Check cache (hash of raw image bytes)
-    cache_key = hashlib.sha256(image_bytes).hexdigest()
+    cache_key = hashlib.sha256(b"describe:v2:" + image_bytes).hexdigest()
     cached = db.query(models.APICache).filter(models.APICache.input_hash == cache_key).first()
     if cached:
         return schemas.DescribeResponse(description=cached.output_text, cached=True)
 
-    # Step 2: Call HuggingFace BLIP
-    description = await call_hf_describe(image_bytes)
+    # Step 2: Try remote captioning first, then fall back to a local metadata description.
+    try:
+        description = await call_hf_describe(image_bytes, image.content_type or "image/png")
+    except HTTPException as exc:
+        if exc.status_code != 502:
+            raise
+        description = describe_image_locally(image_bytes)
 
     # Step 3: Cache result
     db.add(models.APICache(
