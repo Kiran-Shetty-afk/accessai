@@ -56,8 +56,8 @@ export const loginUser = (email, password) =>
   API.post("/auth/login", { email, password });
 
 /** POST /auth/register  →  { id, email, created_at } */
-export const registerUser = ({ name, email, password }) =>
-  API.post("/auth/register", { name, email, password });
+export const registerUser = ({ email, password }) =>
+  API.post("/auth/register", { email, password });
 
 // ===========================================================================
 // SIGN LANGUAGE  (WebSocket — not axios, handled in useSignDetection hook)

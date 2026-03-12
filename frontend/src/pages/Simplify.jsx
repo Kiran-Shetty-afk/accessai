@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Textarea } from "frontend/src/components/ui/textarea";
+import { Textarea } from "@/components/ui/textarea";
 import { simplifyText } from "../api/api";
 import {
   Brain, Sparkles, Copy, Volume2, RotateCcw,

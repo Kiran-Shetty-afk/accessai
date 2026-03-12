@@ -1,7 +1,6 @@
 import { useRef, useState } from "react";
 import Webcam from "react-webcam";
-import { Progress } from "frontend/src/components/ui/progress";
-import { Badge } from "frontend/src/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { useSignDetection } from "../hooks/useSignDetection";
 import { useAccessibility } from "../context/AccessibilityContext";
 import {

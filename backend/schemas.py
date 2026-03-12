@@ -45,6 +45,10 @@ class DescribeResponse(BaseModel):
     cached: bool
 
 
+class DescribeUrlRequest(BaseModel):
+    url: str
+
+
 # ── Voice ─────────────────────────────────────────────────────────────────────
 class VoiceResponse(BaseModel):
     transcript: str

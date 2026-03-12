@@ -79,6 +79,15 @@ def main() -> None:
                 client.post("/api/describe", files={"image": ("tiny.png", png_bytes, "image/png")}),
             ),
             (
+                "POST /api/describe/url",
+                client.post(
+                    "/api/describe/url",
+                    json={
+                        "url": "https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/coco_sample.png"
+                    },
+                ),
+            ),
+            (
                 "POST /api/voice",
                 client.post("/api/voice", files={"audio": ("tiny.wav", wav_bytes, "audio/wav")}),
             ),

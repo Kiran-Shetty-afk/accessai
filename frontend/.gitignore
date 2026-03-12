@@ -47,6 +47,7 @@ Thumbs.db
 
 # Cache
 .cache
+.npm-cache
 .parcel-cache
 .eslintcache
 .stylelintcache

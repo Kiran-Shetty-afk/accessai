@@ -2,6 +2,8 @@ import os
 import hashlib
 import base64
 import asyncio
+from urllib.parse import urlparse
+
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.orm import Session
@@ -99,6 +101,65 @@ def describe_image_locally(image_bytes: bytes) -> str:
     )
 
 
+def validate_remote_url(url: str) -> None:
+    parsed = urlparse(url)
+    if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+        raise HTTPException(status_code=400, detail="Please provide a valid public image URL")
+
+
+async def fetch_remote_image(url: str) -> tuple[bytes, str]:
+    validate_remote_url(url)
+
+    async with httpx.AsyncClient(timeout=60, follow_redirects=True) as client:
+        response = await client.get(url)
+
+    if response.status_code != 200:
+        raise HTTPException(status_code=400, detail="Could not fetch image from the provided URL")
+
+    content_type = (response.headers.get("content-type") or "").split(";")[0].strip().lower()
+    if content_type not in ALLOWED_TYPES:
+        raise HTTPException(status_code=400, detail="URL must point to a JPEG, PNG, WebP, or GIF image")
+
+    image_bytes = response.content
+    if len(image_bytes) == 0:
+        raise HTTPException(status_code=400, detail="Fetched image is empty")
+    if len(image_bytes) > 5 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Remote image must be under 5 MB")
+
+    return image_bytes, content_type
+
+
+async def generate_description(
+    image_bytes: bytes,
+    content_type: str,
+    db: Session,
+) -> schemas.DescribeResponse:
+    cache_key = hashlib.sha256(b"describe:v2:" + image_bytes).hexdigest()
+    cached = (
+        db.query(models.APICache)
+        .filter(models.APICache.input_hash == cache_key)
+        .first()
+    )
+    if cached:
+        return schemas.DescribeResponse(description=cached.output_text, cached=True)
+
+    try:
+        description = await call_hf_describe(image_bytes, content_type)
+    except HTTPException as exc:
+        if exc.status_code != 502:
+            raise
+        description = describe_image_locally(image_bytes)
+
+    db.add(models.APICache(
+        input_hash=cache_key,
+        endpoint="describe",
+        output_text=description,
+    ))
+    db.commit()
+
+    return schemas.DescribeResponse(description=description, cached=False)
+
+
 @router.post("/describe", response_model=schemas.DescribeResponse)
 async def describe(
     image: UploadFile = File(...),
@@ -123,26 +184,13 @@ async def describe(
     if len(image_bytes) > 5 * 1024 * 1024:  # 5 MB limit
         raise HTTPException(status_code=400, detail="Image must be under 5 MB")
 
-    # Step 1: Check cache (hash of raw image bytes)
-    cache_key = hashlib.sha256(b"describe:v2:" + image_bytes).hexdigest()
-    cached = db.query(models.APICache).filter(models.APICache.input_hash == cache_key).first()
-    if cached:
-        return schemas.DescribeResponse(description=cached.output_text, cached=True)
+    return await generate_description(image_bytes, image.content_type or "image/png", db)
 
-    # Step 2: Try remote captioning first, then fall back to a local metadata description.
-    try:
-        description = await call_hf_describe(image_bytes, image.content_type or "image/png")
-    except HTTPException as exc:
-        if exc.status_code != 502:
-            raise
-        description = describe_image_locally(image_bytes)
 
-    # Step 3: Cache result
-    db.add(models.APICache(
-        input_hash=cache_key,
-        endpoint="describe",
-        output_text=description,
-    ))
-    db.commit()
-
-    return schemas.DescribeResponse(description=description, cached=False)
+@router.post("/describe/url", response_model=schemas.DescribeResponse)
+async def describe_url(
+    body: schemas.DescribeUrlRequest,
+    db: Session = Depends(get_db),
+):
+    image_bytes, content_type = await fetch_remote_image(body.url)
+    return await generate_description(image_bytes, content_type, db)
