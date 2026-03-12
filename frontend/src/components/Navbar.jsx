@@ -1,23 +1,23 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAccessibility } from "../context/AccessibilityContext";
-import { Button } from "@/components/ui/button";
+import { Button } from "frontend/src/components/ui/button";
 import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from "@/components/ui/select";
+} from "frontend/src/components/ui/select";
 import {
     Sheet,
     SheetContent,
     SheetHeader,
     SheetTitle,
     SheetTrigger,
-} from "@/components/ui/sheet";
-import { Switch } from "@/components/ui/switch";
-import { Slider } from "@/components/ui/slider";
+} from "frontend/src/components/ui/sheet";
+import { Switch } from "frontend/src/components/ui/switch";
+import { Slider } from "frontend/src/components/ui/slider";
 import {
     Eye,
     Settings,
