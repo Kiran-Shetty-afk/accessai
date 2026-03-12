@@ -7,18 +7,65 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
+# Runtime
+pids
+*.pid
+*.seed
+*.pid.lock
 
-# Editor directories and files
+# Dependencies
+node_modules/
+bower_components/
+jspm_packages/
+
+# Build output
+dist/
+dist-ssr/
+build/
+coverage/
+.nyc_output
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Editor files
 .vscode/*
 !.vscode/extensions.json
+.vscode-test
 .idea
-.DS_Store
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Cache
+.cache
+.parcel-cache
+.eslintcache
+.stylelintcache
+
+# Framework outputs
+.next
+.nuxt
+out
+.svelte-kit/
+.temp
+
+# Python
+venv/
+backend/venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.sqlite3
+*.db
+.pytest_cache/
+.mypy_cache/

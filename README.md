@@ -1,16 +1,47 @@
-# React + Vite
+# AccessAI
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+AI-Powered Accessibility Platform
 
-Currently, two official plugins are available:
+Built for NMIMS Tech Hackathon 2026.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Problem
+1.3 billion people with disabilities face barriers when using the internet.
 
-## React Compiler
+## Solution
+AccessAI removes accessibility barriers using AI.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Features
 
-## Expanding the ESLint configuration
+### Sign Language Detection
+Converts sign language gestures into text and speech using MediaPipe and TensorFlow.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+### Voice Navigator
+Navigate websites using voice commands.
+
+### Cognitive Simplifier
+Simplifies complex text into easy-to-read language.
+
+### Image Describer
+Generates descriptions of images for visually impaired users.
+
+## Tech Stack
+
+### Frontend
+- React
+- Vite
+- Tailwind CSS
+- TensorFlow.js
+
+### Backend
+- FastAPI
+- PostgreSQL
+- SQLAlchemy
+
+### AI
+- MediaPipe
+- HuggingFace
+- TensorFlow
+
+## Installation
+
+### Backend
