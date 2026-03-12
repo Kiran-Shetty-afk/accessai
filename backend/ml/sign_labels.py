@@ -1,17 +1,15 @@
-# ── PLACEHOLDER — ML team fills this in ──────────────────────────────────────
-# Labels MUST be in the exact same order as the model's output neurons.
-# Index 0 = first output neuron, index 1 = second, etc.
-# The ML team (Person 3) replaces this list after training the model.
+import json, os
 
-LABELS = [
-    "hello",    # index 0
-    "yes",      # index 1
-    "no",       # index 2
-    "please",   # index 3
-    "thank you",# index 4
-    "sorry",    # index 5
-    "help",     # index 6
-    "stop",     # index 7
-    "good",     # index 8
-    "bad",      # index 9
-]
+# Load from sign_labels.json (delivered by ML team)
+# This file is auto-synced — do NOT hardcode labels here manually
+_json_path = os.path.join(os.path.dirname(__file__), "..", "models", "sign_labels.json")
+
+try:
+    with open(_json_path) as f:
+        LABELS = json.load(f)
+except FileNotFoundError:
+    # Fallback — exact labels from your trained model (alphabetical order from sklearn LabelEncoder)
+    LABELS = ['bad', 'good', 'hello', 'help', 'more', 'no', 'stop', 'thanks', 'water', 'yes']
+
+# Verify
+assert len(LABELS) == 10, f"Expected 10 labels, got {len(LABELS)}"

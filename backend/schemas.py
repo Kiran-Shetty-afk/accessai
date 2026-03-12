@@ -1,11 +1,11 @@
 from pydantic import BaseModel, EmailStr
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 
 
 # ── Auth ──────────────────────────────────────────────────────────────────────
 class RegisterRequest(BaseModel):
     email: EmailStr
-    password: str  # Plain text — hashed in auth.py before storing
+    password: str
 
 class LoginRequest(BaseModel):
     email: EmailStr
@@ -24,14 +24,13 @@ class UserResponse(BaseModel):
         from_attributes = True
 
 class PreferencesRequest(BaseModel):
-    # Any key-value pairs — e.g. font_size, contrast, voice_speed
     preferences: Dict[str, Any]
 
 
 # ── Simplify ──────────────────────────────────────────────────────────────────
 class SimplifyRequest(BaseModel):
-    text: str           # Max 5000 chars
-    grade_level: int = 5  # 3 = elementary, 5 = middle, 8 = high school
+    text: str
+    grade_level: int = 5  # 3 | 5 | 8
 
 class SimplifyResponse(BaseModel):
     simplified: str
@@ -54,7 +53,7 @@ class VoiceResponse(BaseModel):
 
 # ── Sign ──────────────────────────────────────────────────────────────────────
 class SignPredictRequest(BaseModel):
-    landmarks: list  # 63 floats — 21 keypoints × (x, y, z)
+    landmarks: List[float]   # exactly 63 floats — validated in sign.py
 
 class SignPredictResponse(BaseModel):
     sign: str
