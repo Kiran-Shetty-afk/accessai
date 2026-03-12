@@ -39,6 +39,26 @@ class SimplifyResponse(BaseModel):
     cached: bool
 
 
+class FormHelperRequest(BaseModel):
+    text: str
+    context: Optional[str] = None
+
+
+class FormFieldHelp(BaseModel):
+    field: str
+    explanation: str
+    what_to_prepare: str
+
+
+class FormHelperResponse(BaseModel):
+    summary: str
+    steps: List[str]
+    fields: List[FormFieldHelp]
+    documents: List[str]
+    warnings: List[str]
+    cached: bool
+
+
 # ── Describe ──────────────────────────────────────────────────────────────────
 class DescribeResponse(BaseModel):
     description: str

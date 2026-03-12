@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from database import engine, Base
-from routers import simplify, describe, voice, sign, auth as auth_router
+from routers import simplify, describe, voice, sign, form_helper, auth as auth_router
 
 
 @asynccontextmanager
@@ -59,6 +59,7 @@ app.add_middleware(
 # ── Routers ───────────────────────────────────────────────────────────────────
 app.include_router(auth_router.router,  prefix="/auth", tags=["Auth"])
 app.include_router(simplify.router,     prefix="/api",  tags=["Simplify"])
+app.include_router(form_helper.router,  prefix="/api",  tags=["Form Helper"])
 app.include_router(describe.router,     prefix="/api",  tags=["Describe"])
 app.include_router(voice.router,        prefix="/api",  tags=["Voice"])
 app.include_router(sign.router,         prefix="/api",  tags=["Sign"])

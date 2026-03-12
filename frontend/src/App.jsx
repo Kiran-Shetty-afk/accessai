@@ -5,10 +5,13 @@ import Navbar from "./components/Navbar";
 import { describeImage, describeImageByUrl } from "./api/api";
 
 import Home from "./pages/Home";
+import Profiles from "./pages/Profiles";
 import SignLanguage from "./pages/SignLanguage";
 import Voice from "./pages/Voice";
 import Simplify from "./pages/Simplify";
 import ImageDescribe from "./pages/ImageDescribe";
+import ReadingMode from "./pages/ReadingMode";
+import FormHelper from "./pages/FormHelper";
 
 
 
@@ -196,9 +199,12 @@ export default function App() {
         <div className="page-wrapper">
           <Routes>
             <Route path="/"         element={<Home />} />
+            <Route path="/profiles" element={<Profiles />} />
             <Route path="/sign"     element={<SignLanguage />} />
             <Route path="/voice"    element={<Voice />} />
             <Route path="/simplify" element={<Simplify />} />
+            <Route path="/reading"  element={<ReadingMode />} />
+            <Route path="/forms"    element={<FormHelper />} />
             <Route path="/image"    element={<ImageDescribe />} />
             <Route path="*"         element={<Home />} />
           </Routes>

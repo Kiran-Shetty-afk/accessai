@@ -25,6 +25,8 @@ import {
     Menu,
     X,
     Brain,
+    BookOpen,
+    ClipboardList,
     Hand,
     Mic,
     ImageIcon,
@@ -33,9 +35,12 @@ import {
 
 const NAV_LINKS = [
     { label: "Home", path: "/" },
+    { label: "Profiles", path: "/profiles", icon: Settings },
     { label: "Sign Language", path: "/sign", icon: Hand },
     { label: "Voice Nav", path: "/voice", icon: Mic },
     { label: "Simplifier", path: "/simplify", icon: FileText },
+    { label: "Reading Mode", path: "/reading", icon: BookOpen },
+    { label: "Form Helper", path: "/forms", icon: ClipboardList },
     { label: "Image AI", path: "/image", icon: ImageIcon },
 ];
 
@@ -59,6 +64,7 @@ export default function Navbar() {
         setColourBlind,
         ttsSpeed,
         setTtsSpeed,
+        resetAccessibilitySettings,
     } = useAccessibility();
 
     const [mobileOpen, setMobileOpen] = useState(false);
@@ -132,10 +138,10 @@ export default function Navbar() {
         }
         .nav-link {
           text-decoration: none;
-          font-size: 0.875rem;
+          font-size: 0.82rem;
           font-weight: 500;
           color: var(--text-secondary, #64748b);
-          padding: 0.4rem 0.75rem;
+          padding: 0.35rem 0.6rem;
           border-radius: 8px;
           transition: all 0.15s ease;
           white-space: nowrap;
@@ -492,12 +498,7 @@ export default function Navbar() {
                                                 borderColor: "var(--border-color, #e2e8f0)",
                                                 backgroundColor: "transparent",
                                             }}
-                                            onClick={() => {
-                                                setFontSize(16);
-                                                setHighContrast(false);
-                                                setColourBlind("none");
-                                                setTtsSpeed(1);
-                                            }}
+                                            onClick={resetAccessibilitySettings}
                                         >
                                             Reset to Defaults
                                         </Button>

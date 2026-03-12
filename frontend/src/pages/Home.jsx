@@ -4,12 +4,15 @@ import {
   Mic,
   FileText,
   ImageIcon,
+  ClipboardList,
   ArrowRight,
+  BookOpen,
   Play,
   Globe,
   Users,
   Eye,
   Brain,
+  Settings,
 } from "lucide-react";
 import { useAccessibility } from "../context/AccessibilityContext";
 
@@ -80,6 +83,33 @@ const FEATURES = [
     desc: "Upload or hover over any image for an instant AI-generated audio description.",
     path: "/image",
     tag: "Hover Mode",
+    accent: "#92400e",
+    accentBg: "#fef3c7",
+  },
+];
+
+const SUPPORT_TOOLS = [
+  {
+    icon: Settings,
+    title: "Saved Profiles",
+    desc: "Store the accessibility setup that works for you and switch back to it instantly.",
+    path: "/profiles",
+    accent: "#7c3aed",
+    accentBg: "#ede9fe",
+  },
+  {
+    icon: BookOpen,
+    title: "Reading Mode",
+    desc: "Reduce clutter and move through long text one paragraph at a time with calmer spacing.",
+    path: "/reading",
+    accent: "#0369a1",
+    accentBg: "#e0f2fe",
+  },
+  {
+    icon: ClipboardList,
+    title: "Form Helper",
+    desc: "Break difficult forms into clear steps, field explanations, and required documents.",
+    path: "/forms",
     accent: "#92400e",
     accentBg: "#fef3c7",
   },
@@ -549,6 +579,67 @@ export default function Home() {
           gap: 0.6rem;
         }
 
+        .support-card-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 1rem;
+        }
+
+        .support-card {
+          border-radius: 18px;
+          border: 1px solid var(--border-color, #e8e8e8);
+          background: var(--card-bg, #ffffff);
+          padding: 1.25rem;
+          display: flex;
+          flex-direction: column;
+          gap: 0.8rem;
+          cursor: pointer;
+          transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+        }
+
+        .support-card:hover {
+          transform: translateY(-4px);
+          box-shadow: 0 16px 36px rgba(0,0,0,0.08);
+          border-color: var(--tool-accent);
+        }
+
+        .support-icon {
+          width: 44px;
+          height: 44px;
+          border-radius: 12px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: var(--tool-accent-bg);
+          color: var(--tool-accent);
+        }
+
+        .support-title {
+          font-family: 'Syne', sans-serif;
+          font-weight: 700;
+          font-size: 1rem;
+          letter-spacing: -0.02em;
+          color: var(--text-primary, #0f172a);
+          margin: 0;
+        }
+
+        .support-desc {
+          font-size: 0.88rem;
+          line-height: 1.65;
+          color: var(--text-secondary, #64748b);
+          margin: 0;
+          flex: 1;
+        }
+
+        .support-link {
+          font-size: 0.85rem;
+          font-weight: 700;
+          color: var(--tool-accent);
+          display: inline-flex;
+          align-items: center;
+          gap: 0.35rem;
+        }
+
         /* ── NARRATIVE STRIP ── */
         .narrative {
           background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #1e1b4b 100%);
@@ -608,6 +699,7 @@ export default function Home() {
         @media (max-width: 900px) {
           .stats-grid { grid-template-columns: repeat(2, 1fr); }
           .features-grid { grid-template-columns: 1fr; }
+          .support-card-grid { grid-template-columns: 1fr; }
         }
         @media (max-width: 480px) {
           .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
@@ -640,7 +732,8 @@ export default function Home() {
 
             <p className="hero-sub">
               One platform removing four barriers at once — sign language,
-              voice control, cognitive simplification &amp; image description.
+              voice control, cognitive simplification &amp; image description,
+              plus calmer reading, clearer forms, and reusable accessibility profiles.
               Real-time. Free. Open source.
             </p>
 
@@ -698,7 +791,7 @@ export default function Home() {
         <section className="features-section">
           <div className="features-inner">
             <div className="section-header">
-              <p className="section-eyebrow">Four Features. One Mission.</p>
+              <p className="section-eyebrow">Core Features</p>
               <h2 className="section-title">
                 Every barrier has<br />a solution.
               </h2>
@@ -744,6 +837,42 @@ export default function Home() {
 
         {/* ── NARRATIVE STRIP ── */}
         <section style={{ padding: "0 1.5rem 5rem" }}>
+          <div className="features-inner" style={{ marginBottom: "5rem" }}>
+            <div className="section-header">
+              <p className="section-eyebrow">New Support Tools</p>
+              <h2 className="section-title">
+                More ways to reduce overload.
+              </h2>
+              <p className="section-sub">
+                Save a setup that works for you, read in a calmer layout, and turn forms into
+                simple next steps.
+              </p>
+            </div>
+
+            <div className="support-card-grid" style={{ marginBottom: "3rem" }}>
+              {SUPPORT_TOOLS.map((tool) => (
+                <div
+                  key={tool.path}
+                  className="support-card"
+                  style={{
+                    "--tool-accent": tool.accent,
+                    "--tool-accent-bg": tool.accentBg,
+                  }}
+                  onClick={() => navigate(tool.path)}
+                >
+                  <div className="support-icon">
+                    <tool.icon size={18} />
+                  </div>
+                  <h3 className="support-title">{tool.title}</h3>
+                  <p className="support-desc">{tool.desc}</p>
+                  <span className="support-link">
+                    Explore tool <ArrowRight size={14} />
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
           <div className="narrative">
             <p className="narrative-quote">
               "The internet was built for able-bodied people.{" "}
