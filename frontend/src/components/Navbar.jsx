@@ -20,25 +20,27 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import {
-    Eye,
-    Settings,
-    Zap,
-    Menu,
+  Eye,
+  Settings,
+  Zap,
+  Menu,
     X,
     Brain,
-    Hand,
-    Mic,
-    ImageIcon,
-    FileText,
+  Hand,
+  Mic,
+  ImageIcon,
+  FileText,
+  Phone,
 } from "lucide-react";
 
 const NAV_LINKS = [
     { label: "Home", path: "/" },
     { label: "Profiles", path: "/profiles", icon: Settings },
-    { label: "Sign Language", path: "/sign", icon: Hand },
-    { label: "Voice Nav", path: "/voice", icon: Mic },
-    { label: "Simplifier", path: "/simplify", icon: FileText },
-    { label: "Image AI", path: "/image", icon: ImageIcon },
+  { label: "Sign Language", path: "/sign", icon: Hand },
+  { label: "Voice Nav", path: "/voice", icon: Mic },
+  { label: "Simplifier", path: "/simplify", icon: FileText },
+  { label: "Image AI", path: "/image", icon: ImageIcon },
+  { label: "Sign Call", path: "/call", icon: Phone },
 ];
 
 const FONT_OPTIONS = [

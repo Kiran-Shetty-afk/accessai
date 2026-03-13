@@ -113,12 +113,21 @@ export const COMMANDS = [
     },
   },
   {
+    keywords: ["open call", "sign call", "video call", "call page"],
+    description: "Open Sign Call",
+    category: "navigation",
+    action: (navigate) => {
+      navigate("/call");
+      return "Opening Sign Call";
+    },
+  },
+  {
     keywords: ["help", "what can i say", "commands"],
     description: "Read available voice commands",
     category: "navigation",
     action: (_, ctx) => {
       ctx.speak(
-        "You can say open sign, open voice, open image, open simplify, scroll down, scroll up, read page, or go home."
+        "You can say open sign, open voice, open image, open simplify, open call, scroll down, scroll up, read page, or go home."
       );
       return "Reading available voice commands";
     },

@@ -11,6 +11,7 @@ import {
   Hand,
   ImageIcon,
   Mic,
+  Phone,
   Play,
   Users,
   Zap,
@@ -96,9 +97,20 @@ const SECTIONS = [
     speech:
       "Section for users who struggle to understand complex images like charts, diagrams, scans, or infographics. Upload any image and our AI explains it in simple plain language. Click or press Enter to open.",
   },
+  {
+    id: "call",
+    route: "/call",
+    icon: Phone,
+    label: "Sign Call",
+    desc: "Start a live video call and share sign-language captions with another person.",
+    tags: ["Video Call", "Live Captions", "Sign Sharing"],
+    accent: "#7c3aed",
+    speech:
+      "Sign Call lets two people open a live video session and share detected sign-language captions in real time. Click or press Enter to open.",
+  },
 ];
 
-const VOICE_COMMANDS = ["open sign", "open voice", "open image", "open simplify", "help"];
+const VOICE_COMMANDS = ["open sign", "open voice", "open image", "open simplify", "open call", "help"];
 
 export default function Home() {
   const navigate = useNavigate();
@@ -120,7 +132,7 @@ export default function Home() {
 
     const welcomeTimer = setTimeout(() => {
       speak(
-        "Welcome to AccessAI. Voice Navigator can guide you through this homepage. Say open voice, open sign, open image, open simplify, or help. You can also hover over any card to hear what it does."
+        "Welcome to AccessAI. Voice Navigator can guide you through this homepage. Say open voice, open sign, open image, open simplify, open call, or help. You can also hover over any card to hear what it does."
       );
     }, 400);
 
