@@ -11,8 +11,6 @@ import SignLanguage from "./pages/SignLanguage";
 import Voice from "./pages/Voice";
 import Simplify from "./pages/Simplify";
 import ImageDescribe from "./pages/ImageDescribe";
-import ReadingMode from "./pages/ReadingMode";
-import FormHelper from "./pages/FormHelper";
 
 function GlobalHoverListener() {
   const { hoverMode, speak } = useAccessibility();
@@ -245,8 +243,6 @@ export default function App() {
               <Route path="/sign" element={<SignLanguage />} />
               <Route path="/voice" element={<Voice />} />
               <Route path="/simplify" element={<Simplify />} />
-              <Route path="/reading" element={<ReadingMode />} />
-              <Route path="/forms" element={<FormHelper />} />
               <Route path="/image" element={<ImageDescribe />} />
               <Route path="*" element={<Home />} />
             </Routes>

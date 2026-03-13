@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr
-from typing import Optional, Dict, Any, List
+from typing import Dict, Any, List
 
 
 # ── Auth ──────────────────────────────────────────────────────────────────────
@@ -36,26 +36,6 @@ class SimplifyResponse(BaseModel):
     simplified: str
     word_count_before: int
     word_count_after: int
-    cached: bool
-
-
-class FormHelperRequest(BaseModel):
-    text: str
-    context: Optional[str] = None
-
-
-class FormFieldHelp(BaseModel):
-    field: str
-    explanation: str
-    what_to_prepare: str
-
-
-class FormHelperResponse(BaseModel):
-    summary: str
-    steps: List[str]
-    fields: List[FormFieldHelp]
-    documents: List[str]
-    warnings: List[str]
     cached: bool
 
 

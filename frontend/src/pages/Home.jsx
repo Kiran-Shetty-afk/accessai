@@ -4,9 +4,7 @@ import {
   Mic,
   FileText,
   ImageIcon,
-  ClipboardList,
   ArrowRight,
-  BookOpen,
   Play,
   Globe,
   Users,
@@ -96,22 +94,6 @@ const SUPPORT_TOOLS = [
     path: "/profiles",
     accent: "#7c3aed",
     accentBg: "#ede9fe",
-  },
-  {
-    icon: BookOpen,
-    title: "Reading Mode",
-    desc: "Reduce clutter and move through long text one paragraph at a time with calmer spacing.",
-    path: "/reading",
-    accent: "#0369a1",
-    accentBg: "#e0f2fe",
-  },
-  {
-    icon: ClipboardList,
-    title: "Form Helper",
-    desc: "Break difficult forms into clear steps, field explanations, and required documents.",
-    path: "/forms",
-    accent: "#92400e",
-    accentBg: "#fef3c7",
   },
 ];
 
@@ -581,7 +563,8 @@ export default function Home() {
 
         .support-card-grid {
           display: grid;
-          grid-template-columns: repeat(3, 1fr);
+          grid-template-columns: minmax(280px, 420px);
+          justify-content: center;
           gap: 1rem;
         }
 
@@ -733,7 +716,7 @@ export default function Home() {
             <p className="hero-sub">
               One platform removing four barriers at once — sign language,
               voice control, cognitive simplification &amp; image description,
-              plus calmer reading, clearer forms, and reusable accessibility profiles.
+              plus reusable accessibility profiles.
               Real-time. Free. Open source.
             </p>
 
@@ -841,11 +824,10 @@ export default function Home() {
             <div className="section-header">
               <p className="section-eyebrow">New Support Tools</p>
               <h2 className="section-title">
-                More ways to reduce overload.
+                Keep your setup ready.
               </h2>
               <p className="section-sub">
-                Save a setup that works for you, read in a calmer layout, and turn forms into
-                simple next steps.
+                Save a setup that works for you and switch back to it instantly.
               </p>
             </div>
 

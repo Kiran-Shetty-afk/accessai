@@ -98,14 +98,6 @@ export const transcribeVoice = (audioBlob) => {
 export const simplifyText = (text, gradeLevel = 5) =>
   API.post("/api/simplify", { text, grade_level: gradeLevel });
 
-/**
- * POST /api/form-helper
- * Body: { text: string, context?: string }
- * Response: { summary, steps, fields, documents, warnings, cached }
- */
-export const getFormHelp = (text, context = "") =>
-  API.post("/api/form-helper", { text, context });
-
 // ===========================================================================
 // IMAGE DESCRIBER
 // ===========================================================================

@@ -26,8 +26,6 @@ import {
     Menu,
     X,
     Brain,
-    BookOpen,
-    ClipboardList,
     Hand,
     Mic,
     ImageIcon,
@@ -40,8 +38,6 @@ const NAV_LINKS = [
     { label: "Sign Language", path: "/sign", icon: Hand },
     { label: "Voice Nav", path: "/voice", icon: Mic },
     { label: "Simplifier", path: "/simplify", icon: FileText },
-    { label: "Reading Mode", path: "/reading", icon: BookOpen },
-    { label: "Form Helper", path: "/forms", icon: ClipboardList },
     { label: "Image AI", path: "/image", icon: ImageIcon },
 ];
 

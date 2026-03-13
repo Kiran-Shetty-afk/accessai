@@ -75,21 +75,6 @@ def main() -> None:
                 ),
             ),
             (
-                "POST /api/form-helper",
-                client.post(
-                    "/api/form-helper",
-                    json={
-                        "text": (
-                            "Full Name: Enter your name as it appears on your ID.\n"
-                            "Proof of Address: Attach a recent utility bill.\n"
-                            "Signature: Sign before submission.\n"
-                            "Submit the form before April 30."
-                        ),
-                        "context": "The user needs a step-by-step explanation.",
-                    },
-                ),
-            ),
-            (
                 "POST /api/describe",
                 client.post("/api/describe", files={"image": ("tiny.png", png_bytes, "image/png")}),
             ),
