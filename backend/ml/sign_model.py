@@ -1,8 +1,9 @@
 """
-ML integration layer — called by both /api/sign/predict and /ws/sign.
-Place sign_model.h5 in the models/ folder before running the server.
+ML integration layer used by both /api/sign/predict and /ws/sign.
+Place sign_model.h5 in the backend/models folder before running the server.
 """
 import os
+
 import numpy as np
 
 _model = None
@@ -14,19 +15,20 @@ def get_model():
     if _model is None:
         try:
             import tensorflow as tf
+
             model_path = os.path.join(os.path.dirname(__file__), "..", "models", "sign_model.h5")
             model_path = os.path.abspath(model_path)
 
             if not os.path.exists(model_path):
                 raise FileNotFoundError(
                     f"sign_model.h5 not found at: {model_path}\n"
-                    f"Place the trained model file in the models/ folder."
+                    "Place the trained model file in the models/ folder."
                 )
 
             _model = tf.keras.models.load_model(model_path)
-            print(f"✅ Sign model loaded from {model_path}")
-        except Exception as e:
-            raise RuntimeError(f"Could not load sign model: {e}")
+            print(f"Sign model loaded from {model_path}")
+        except Exception as error:
+            raise RuntimeError(f"Could not load sign model: {error}")
     return _model
 
 
@@ -35,12 +37,11 @@ def predict(landmarks: list) -> dict:
     Run inference on 63 hand landmark floats.
 
     Args:
-        landmarks: List of 63 floats (21 keypoints × x, y, z) — wrist-normalised
+        landmarks: List of 63 floats (21 keypoints x, y, z) normalized by wrist position.
 
     Returns:
-        { "sign": "hello", "confidence": 0.97 }
+        {"sign": "hello", "confidence": 0.97}
     """
-    # Import here to avoid circular import issues
     from ml.sign_labels import LABELS
 
     if len(landmarks) != 63:

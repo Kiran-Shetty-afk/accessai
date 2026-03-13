@@ -1,115 +1,152 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import * as tf from "@tensorflow/tfjs";
-import * as handPoseDetection from "@tensorflow-models/hand-pose-detection";
 import { WS_SIGN_URL } from "../api/api";
 
-const SIGN_LABELS = [
-  "hello", "yes", "no", "thanks", "help",
-  "stop", "good", "bad", "water", "more",
-];
+// Alphabetical order to match the trained model / sklearn LabelEncoder output.
+const SIGN_LABELS = ["bad", "good", "hello", "help", "more", "no", "stop", "thanks", "water", "yes"];
 
-// Normalise 21 keypoints → flat 63-number array relative to wrist
+/*
+  Training used MediaPipe normalized x/y coordinates relative to the wrist,
+  with z forced to 0. The frontend must keep the same preprocessing or the
+  local TF.js model and backend H5 model will disagree.
+*/
 function extractLandmarks(hand) {
-  const wrist = hand.keypoints3D[0];
-  return hand.keypoints3D.flatMap(({ x, y, z }) => [
-    x - wrist.x,
-    y - wrist.y,
-    z - wrist.z,
-  ]);
+  const wristX = hand[0].x;
+  const wristY = hand[0].y;
+  const values = hand.flatMap(({ x, y }) => [x - wristX, y - wristY, 0]);
+  return values.some(Number.isNaN) ? null : values;
+}
+
+function speakText(text) {
+  if (!text || !window.speechSynthesis) {
+    return;
+  }
+
+  window.speechSynthesis.cancel();
+  window.speechSynthesis.speak(new SpeechSynthesisUtterance(text));
 }
 
 export function useSignDetection(webcamRef, canvasRef, isActive) {
-  const [detectedSign, setDetectedSign]   = useState("");
-  const [confidence, setConfidence]       = useState(0);
-  const [history, setHistory]             = useState([]);
-  const [isConnected, setIsConnected]     = useState(false);
-  const [modelReady, setModelReady]       = useState(false);
-  const [error, setError]                 = useState(null);
+  const [detectedSign, setDetectedSign] = useState("");
+  const [confidence, setConfidence] = useState(0);
+  const [history, setHistory] = useState([]);
+  const [isConnected, setIsConnected] = useState(false);
+  const [modelReady, setModelReady] = useState(false);
+  const [error, setError] = useState(null);
 
-  const detectorRef  = useRef(null);
-  const tfModelRef   = useRef(null);
-  const wsRef        = useRef(null);
-  const rafRef       = useRef(null);
-  const lastSignRef  = useRef("");
-  const lastSentRef  = useRef(0);
+  const handsRef = useRef(null);
+  const tfModelRef = useRef(null);
+  const wsRef = useRef(null);
+  const rafRef = useRef(null);
+  const lastSignRef = useRef("");
+  const lastSentRef = useRef(0);
+  const latestResultsRef = useRef(null);
+  const isRunningRef = useRef(false);
 
-  // ── Load MediaPipe + TF.js model ──────────────────────────────────────────
   useEffect(() => {
-    if (!isActive) return;
+    if (!isActive) {
+      return undefined;
+    }
 
     let cancelled = false;
 
     async function loadModels() {
       try {
+        const { Hands } = await import("@mediapipe/hands");
+
+        const hands = new Hands({
+          locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`,
+        });
+
+        hands.setOptions({
+          maxNumHands: 1,
+          modelComplexity: 1,
+          minDetectionConfidence: 0.6,
+          minTrackingConfidence: 0.5,
+        });
+
+        hands.onResults((results) => {
+          latestResultsRef.current = results;
+        });
+
+        await hands.initialize();
+        handsRef.current = hands;
+
+        await tf.setBackend("webgl");
         await tf.ready();
 
-        // Hand pose detector (MediaPipe)
-        const model = handPoseDetection.SupportedModels.MediaPipeHands;
-        const detectorConfig = {
-          runtime: "tfjs",
-          modelType: "lite",
-          maxHands: 1,
-        };
-        detectorRef.current = await handPoseDetection.createDetector(
-          model,
-          detectorConfig
-        );
-
-        // Optional: load custom TF.js sign model from /public/models/
         try {
-          tfModelRef.current = await tf.loadLayersModel(
-            "/models/sign_model/model.json"
-          );
-        } catch {
-          // Model not available yet — will use WebSocket fallback only
-          console.info("Custom TF.js model not found, using WS fallback.");
+          tfModelRef.current = await tf.loadGraphModel("/models/sign_model/model.json");
+          const dummy = tf.zeros([1, 63]);
+          const warmup = tfModelRef.current.predict(dummy);
+          warmup.dispose();
+          dummy.dispose();
+        } catch (modelError) {
+          console.warn("Local TF.js sign model unavailable, using backend WebSocket fallback.", modelError);
         }
 
-        if (!cancelled) setModelReady(true);
-      } catch (err) {
-        if (!cancelled) setError("Failed to load hand detection model.");
-        console.error(err);
+        if (!cancelled) {
+          setModelReady(true);
+          setError(null);
+        }
+      } catch (loadError) {
+        console.error("Failed to load sign detection models.", loadError);
+        if (!cancelled) {
+          setError("Failed to load hand detection.");
+          setModelReady(false);
+        }
       }
     }
 
     loadModels();
-    return () => { cancelled = true; };
+
+    return () => {
+      cancelled = true;
+    };
   }, [isActive]);
 
-  // ── WebSocket ─────────────────────────────────────────────────────────────
   useEffect(() => {
-    if (!isActive) return;
+    if (!isActive) {
+      return undefined;
+    }
+
+    let reconnectTimer = null;
 
     function connect() {
       try {
         const ws = new WebSocket(WS_SIGN_URL);
         wsRef.current = ws;
 
-        ws.onopen  = () => setIsConnected(true);
+        ws.onopen = () => {
+          setIsConnected(true);
+        };
+
         ws.onclose = () => {
           setIsConnected(false);
-          // Reconnect after 3s
-          setTimeout(connect, 3000);
+          reconnectTimer = setTimeout(connect, 3000);
         };
-        ws.onerror = () => setIsConnected(false);
 
-        ws.onmessage = (evt) => {
+        ws.onerror = () => {
+          setIsConnected(false);
+        };
+
+        ws.onmessage = (event) => {
           try {
-            const { sign, confidence: conf } = JSON.parse(evt.data);
-            if (sign && sign !== lastSignRef.current) {
+            const { sign, confidence: rawConfidence } = JSON.parse(event.data);
+            const confidencePercent = Math.round((rawConfidence ?? 0) * 100);
+
+            if (sign && confidencePercent > 55 && sign !== lastSignRef.current) {
               lastSignRef.current = sign;
               setDetectedSign(sign);
-              setConfidence(Math.round(conf * 100));
-              setHistory((prev) =>
-                [{ sign, conf: Math.round(conf * 100), ts: Date.now() }, ...prev].slice(0, 10)
+              setConfidence(confidencePercent);
+              setHistory((previous) =>
+                [{ sign, conf: confidencePercent, ts: Date.now() }, ...previous].slice(0, 10)
               );
-              // TTS
-              if (window.speechSynthesis) {
-                window.speechSynthesis.cancel();
-                window.speechSynthesis.speak(new SpeechSynthesisUtterance(sign));
-              }
+              speakText(sign);
             }
-          } catch { /* ignore parse errors */ }
+          } catch {
+            // Ignore malformed frames.
+          }
         };
       } catch {
         setIsConnected(false);
@@ -117,91 +154,110 @@ export function useSignDetection(webcamRef, canvasRef, isActive) {
     }
 
     connect();
+
     return () => {
-      wsRef.current?.close();
+      clearTimeout(reconnectTimer);
+      if (wsRef.current) {
+        wsRef.current.onclose = null;
+        wsRef.current.close();
+      }
       setIsConnected(false);
     };
   }, [isActive]);
 
-  // ── Detection loop ────────────────────────────────────────────────────────
   const detect = useCallback(async () => {
-    if (
-      !detectorRef.current ||
-      !webcamRef.current?.video ||
-      webcamRef.current.video.readyState !== 4
-    ) {
+    if (!isRunningRef.current) {
+      return;
+    }
+
+    const video = webcamRef.current?.video;
+    const canvas = canvasRef.current;
+
+    if (!video || !canvas || !handsRef.current || video.readyState !== 4) {
       rafRef.current = requestAnimationFrame(detect);
       return;
     }
 
-    const video  = webcamRef.current.video;
-    const canvas = canvasRef.current;
+    try {
+      await handsRef.current.send({ image: video });
+    } catch {
+      rafRef.current = requestAnimationFrame(detect);
+      return;
+    }
 
-    // Draw landmarks on canvas overlay
-    if (canvas) {
-      canvas.width  = video.videoWidth;
-      canvas.height = video.videoHeight;
-      const ctx = canvas.getContext("2d");
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const results = latestResultsRef.current;
+    const rect = canvas.getBoundingClientRect();
+    const canvasWidth = Math.round(rect.width) || 640;
+    const canvasHeight = Math.round(rect.height) || 480;
 
-      try {
-        const hands = await detectorRef.current.estimateHands(video);
+    if (canvas.width !== canvasWidth) {
+      canvas.width = canvasWidth;
+    }
+    if (canvas.height !== canvasHeight) {
+      canvas.height = canvasHeight;
+    }
 
-        if (hands.length > 0) {
-          drawLandmarks(ctx, hands[0]);
+    const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, canvasWidth, canvasHeight);
 
-          const landmarks = extractLandmarks(hands[0]);
+    if (results?.multiHandLandmarks?.length > 0) {
+      const hand = results.multiHandLandmarks[0];
+      drawLandmarks(ctx, hand, canvasWidth, canvasHeight);
 
-          // ── Local TF.js model (if loaded) ──
-          if (tfModelRef.current) {
-            const tensor = tf.tensor2d([landmarks]);
-            const pred   = tfModelRef.current.predict(tensor);
-            const probs  = await pred.data();
-            const idx    = probs.indexOf(Math.max(...probs));
-            tensor.dispose();
-            pred.dispose();
+      const landmarks = extractLandmarks(hand);
 
-            const sign = SIGN_LABELS[idx] || "";
-            const conf = Math.round(probs[idx] * 100);
+      if (landmarks && tfModelRef.current) {
+        try {
+          const tensor = tf.tensor2d([landmarks], [1, 63]);
+          const prediction = tfModelRef.current.predict(tensor);
+          const probabilities = await prediction.data();
 
-            if (sign !== lastSignRef.current && conf > 60) {
-              lastSignRef.current = sign;
-              setDetectedSign(sign);
-              setConfidence(conf);
-              setHistory((prev) =>
-                [{ sign, conf, ts: Date.now() }, ...prev].slice(0, 10)
-              );
-            }
+          tensor.dispose();
+          prediction.dispose();
+
+          const bestIndex = Array.from(probabilities).indexOf(Math.max(...probabilities));
+          const sign = SIGN_LABELS[bestIndex];
+          const confidencePercent = Math.round(probabilities[bestIndex] * 100);
+
+          if (sign && confidencePercent > 55 && sign !== lastSignRef.current) {
+            lastSignRef.current = sign;
+            setDetectedSign(sign);
+            setConfidence(confidencePercent);
+            setHistory((previous) =>
+              [{ sign, conf: confidencePercent, ts: Date.now() }, ...previous].slice(0, 10)
+            );
+            speakText(sign);
           }
-
-          // ── WebSocket fallback (throttled to every 200ms) ──
-          const now = Date.now();
-          if (
-            wsRef.current?.readyState === WebSocket.OPEN &&
-            now - lastSentRef.current > 200
-          ) {
-            wsRef.current.send(JSON.stringify({ landmarks }));
-            lastSentRef.current = now;
-          }
-        } else {
-          // No hand visible — clear sign after 1.5s
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
+        } catch (predictionError) {
+          console.warn("Local sign prediction failed.", predictionError);
         }
-      } catch { /* frame error — skip */ }
+      }
+
+      if (landmarks) {
+        const now = Date.now();
+        if (wsRef.current?.readyState === WebSocket.OPEN && now - lastSentRef.current > 200) {
+          wsRef.current.send(JSON.stringify({ landmarks }));
+          lastSentRef.current = now;
+        }
+      }
     }
 
     rafRef.current = requestAnimationFrame(detect);
-  }, [webcamRef, canvasRef]);
+  }, [canvasRef, webcamRef]);
 
-  // Start / stop detection loop
   useEffect(() => {
     if (isActive && modelReady) {
+      isRunningRef.current = true;
       rafRef.current = requestAnimationFrame(detect);
     }
+
     return () => {
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      isRunningRef.current = false;
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
+      }
     };
-  }, [isActive, modelReady, detect]);
+  }, [detect, isActive, modelReady]);
 
   const clearHistory = useCallback(() => {
     setHistory([]);
@@ -211,9 +267,7 @@ export function useSignDetection(webcamRef, canvasRef, isActive) {
   }, []);
 
   const speakSign = useCallback((text) => {
-    if (!text || !window.speechSynthesis) return;
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(new SpeechSynthesisUtterance(text));
+    speakText(text);
   }, []);
 
   return {
@@ -225,43 +279,41 @@ export function useSignDetection(webcamRef, canvasRef, isActive) {
     error,
     clearHistory,
     speakSign,
+    SIGN_LABELS,
   };
 }
 
-// ── Canvas landmark drawing helper ───────────────────────────────────────────
-function drawLandmarks(ctx, hand) {
-  const kp = hand.keypoints;
-
-  // Connections between landmarks
+function drawLandmarks(ctx, hand, canvasWidth, canvasHeight) {
   const connections = [
-    [0,1],[1,2],[2,3],[3,4],         // thumb
-    [0,5],[5,6],[6,7],[7,8],         // index
-    [0,9],[9,10],[10,11],[11,12],    // middle
-    [0,13],[13,14],[14,15],[15,16],  // ring
-    [0,17],[17,18],[18,19],[19,20],  // pinky
-    [5,9],[9,13],[13,17],            // palm
+    [0, 1], [1, 2], [2, 3], [3, 4],
+    [0, 5], [5, 6], [6, 7], [7, 8],
+    [0, 9], [9, 10], [10, 11], [11, 12],
+    [0, 13], [13, 14], [14, 15], [15, 16],
+    [0, 17], [17, 18], [18, 19], [19, 20],
+    [5, 9], [9, 13], [13, 17],
   ];
 
-  ctx.strokeStyle = "rgba(124, 58, 237, 0.8)";
-  ctx.lineWidth = 2;
-  connections.forEach(([a, b]) => {
-    if (!kp[a] || !kp[b]) return;
-    ctx.beginPath();
-    ctx.moveTo(kp[a].x, kp[a].y);
-    ctx.lineTo(kp[b].x, kp[b].y);
-    ctx.stroke();
-  });
+  ctx.strokeStyle = "rgba(124,58,237,0.9)";
+  ctx.lineWidth = 2.5;
 
-  // Dots
-  kp.forEach((point, i) => {
-    const isFingerTip = [4, 8, 12, 16, 20].includes(i);
+  for (const [start, end] of connections) {
+    if (!hand[start] || !hand[end]) {
+      continue;
+    }
+
     ctx.beginPath();
-    ctx.arc(point.x, point.y, isFingerTip ? 6 : 4, 0, 2 * Math.PI);
-    ctx.fillStyle = isFingerTip
-      ? "rgba(167, 243, 208, 0.95)"
-      : "rgba(196, 181, 253, 0.9)";
+    ctx.moveTo(hand[start].x * canvasWidth, hand[start].y * canvasHeight);
+    ctx.lineTo(hand[end].x * canvasWidth, hand[end].y * canvasHeight);
+    ctx.stroke();
+  }
+
+  hand.forEach((point, index) => {
+    const isFingerTip = [4, 8, 12, 16, 20].includes(index);
+    ctx.beginPath();
+    ctx.arc(point.x * canvasWidth, point.y * canvasHeight, isFingerTip ? 7 : 4, 0, 2 * Math.PI);
+    ctx.fillStyle = isFingerTip ? "rgba(167,243,208,0.95)" : "rgba(196,181,253,0.9)";
     ctx.fill();
-    ctx.strokeStyle = "rgba(255,255,255,0.6)";
+    ctx.strokeStyle = "#ffffff";
     ctx.lineWidth = 1;
     ctx.stroke();
   });
