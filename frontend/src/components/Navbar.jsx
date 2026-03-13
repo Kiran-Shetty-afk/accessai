@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAccessibility } from "../context/AccessibilityContext";
+import { useVoiceNav } from "../hooks/useVoiceNav";
 import { Button } from "@/components/ui/button";
 import {
     Select,
@@ -66,6 +67,7 @@ export default function Navbar() {
         setTtsSpeed,
         resetAccessibilitySettings,
     } = useAccessibility();
+    const { isListening, supported, toggleListening } = useVoiceNav();
 
     const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -186,6 +188,35 @@ export default function Navbar() {
           background: #0f172a;
           color: #ffffff;
           border-color: #0f172a;
+        }
+
+        .voice-toggle-btn {
+          width: 36px;
+          height: 36px;
+          border-radius: 8px;
+          border: 1px solid var(--border-color, #e2e8f0);
+          background: transparent;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: var(--text-secondary, #64748b);
+          transition: all 0.15s ease;
+        }
+        .voice-toggle-btn:hover {
+          background: #f1f5f9;
+          color: var(--text-primary, #0f172a);
+        }
+        .voice-toggle-btn.active {
+          background: linear-gradient(135deg, #7c3aed, #4f46e5);
+          color: #ffffff;
+          border-color: #7c3aed;
+          box-shadow: 0 4px 18px rgba(124, 58, 237, 0.35);
+        }
+        .voice-toggle-btn:disabled {
+          opacity: 0.45;
+          cursor: not-allowed;
+          box-shadow: none;
         }
 
         .priya-btn {
@@ -370,6 +401,15 @@ export default function Navbar() {
                             title="Toggle high contrast"
                         >
                             <Eye size={16} />
+                        </button>
+
+                        <button
+                            className={`voice-toggle-btn ${isListening ? "active" : ""}`}
+                            onClick={toggleListening}
+                            disabled={!supported}
+                            title={isListening ? "Stop voice navigation" : "Start voice navigation"}
+                        >
+                            <Mic size={16} />
                         </button>
 
                         {/* Settings sheet */}

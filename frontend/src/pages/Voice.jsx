@@ -451,7 +451,7 @@ export default function Voice() {
           </div>
           <h1 className="vn-title">Control with your voice.</h1>
           <p className="vn-sub">
-            Scroll, navigate, resize text, and read pages — completely hands-free.
+            Start once here or from the navbar, then keep navigating the whole site hands-free.
           </p>
         </div>
 
@@ -506,7 +506,7 @@ export default function Voice() {
                 </div>
                 <div className="mic-status-sub">
                   {isListening
-                    ? "Speak a command clearly"
+                    ? "Voice Nav stays active while you move through the site"
                     : "Click the mic to start"
                   }
                 </div>
