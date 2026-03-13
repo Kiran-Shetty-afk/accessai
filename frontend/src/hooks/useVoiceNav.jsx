@@ -113,6 +113,17 @@ export const COMMANDS = [
     },
   },
   {
+    keywords: ["help", "what can i say", "commands"],
+    description: "Read available voice commands",
+    category: "navigation",
+    action: (_, ctx) => {
+      ctx.speak(
+        "You can say open sign, open voice, open image, open simplify, scroll down, scroll up, read page, or go home."
+      );
+      return "Reading available voice commands";
+    },
+  },
+  {
     keywords: ["increase text", "bigger text", "larger text", "increase font", "zoom in"],
     description: "Increase font size",
     category: "accessibility",
@@ -315,7 +326,17 @@ function useVoiceNavController() {
     };
 
     recognitionRef.current = recognition;
-    recognition.start();
+
+    try {
+      recognition.start();
+    } catch {
+      recognitionRef.current = null;
+      setLastAction({
+        text: "Microphone start was blocked. Use the mic button to try again.",
+        success: false,
+        ts: Date.now(),
+      });
+    }
   }, [ctx, isListening, matchCommand, navigate]);
 
   const toggleListening = useCallback(() => {
