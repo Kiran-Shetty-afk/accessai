@@ -1,171 +1,300 @@
-# AccessAI
+# AccessAI 🚀
 
-AccessAI is an accessibility-focused web app with a React frontend and a FastAPI backend.
+**AI-Powered Accessibility Platform**
 
-It includes:
-- Sign language detection
-- Voice navigation
-- Text simplification
-- Image description
+[![License](https://img.shields.io/badge/license-MIT-green)](#license)
+[![Python](https://img.shields.io/badge/python-3.11-blue)](https://www.python.org/)
+[![React](https://img.shields.io/badge/react-frontend-61dafb)](https://react.dev/)
+[![FastAPI](https://img.shields.io/badge/backend-fastapi-009688)](https://fastapi.tiangolo.com/)
+[![PostgreSQL](https://img.shields.io/badge/database-postgresql-336791)](https://www.postgresql.org/)
+[![Hackathon](https://img.shields.io/badge/hackathon-NMIMS%202026-orange)]()
 
-## Project Structure
+AccessAI is an **AI-powered accessibility platform** designed to make websites easier to use for people with disabilities.
+It integrates **computer vision, speech processing, and natural language AI** to help users interact with digital content more easily.
+
+🏆 **Achievement:** 4th Place – NMIMS Tech Hackathon on Disability Inclusion
+
+---
+
+# 🌍 Why AccessAI?
+
+Over **1.3 billion people globally live with disabilities**, and many digital platforms are not accessible.
+
+AccessAI provides AI-driven tools that help users:
+
+* Understand complex content
+* Navigate websites using voice
+* Interpret sign language
+* Understand images through AI descriptions
+
+Our goal is to make the **web more inclusive and accessible**.
+
+---
+## 🎥 Project Demo
+
+Watch the AccessAI demo video:
+
+[![AccessAI Demo](https://img.youtube.com/vi/K3-UwKsswkE/0.jpg)](https://youtu.be/K3-UwKsswkE)
+
+# ✨ Features
+
+## 🤟 Sign Language Recognition
+
+Real-time sign language detection using webcam input.
+
+* Hand landmark detection via **MediaPipe**
+* Gesture recognition with **TensorFlow**
+* Converts sign language → text → speech
+
+---
+
+## 🧠 Cognitive Text Simplifier
+
+Simplifies complex text into easy-to-read language.
+
+Example:
 
 ```text
-accessai/
-├── backend/
-├── frontend/
-└── extension/
+Original:
+The government implemented a comprehensive environmental sustainability initiative.
+
+Simplified:
+The government started a plan to protect the environment.
 ```
 
-## Prerequisites
+Helps users with:
 
-- Python 3.12+ recommended
-- Node.js 20+ recommended
-- PostgreSQL running locally
+* Dyslexia
+* Cognitive disabilities
+* Low literacy levels
 
-## Backend Setup
+---
 
-Open a terminal in [backend](/D:/Projects/accessai/backend).
+## 🖼 Image Description
 
-1. Activate the virtual environment:
+Automatically generates descriptions for images.
 
-```powershell
-venv\Scripts\activate
+Example output:
+
+```text
+"A person in a wheelchair working on a laptop."
 ```
 
-If `venv` does not exist yet:
+Helps visually impaired users understand visual content.
 
-```powershell
+---
+
+## 🎙 Voice Navigation
+
+Users can control the interface using voice commands.
+
+Example commands:
+
+```text
+scroll down
+go back
+read page
+increase text
+```
+
+Designed for users with **motor disabilities**.
+
+---
+
+# 🏗 System Architecture
+
+```mermaid
+flowchart LR
+
+User[User Browser]
+Frontend[React Frontend]
+Backend[FastAPI Backend]
+Database[(PostgreSQL)]
+AI[HuggingFace AI APIs]
+Vision[MediaPipe]
+Model[TensorFlow Sign Model]
+
+User --> Frontend
+Frontend --> Backend
+Backend --> Database
+Backend --> AI
+Frontend --> Vision
+Vision --> Model
+Model --> Backend
+```
+
+---
+
+# ⚙️ Tech Stack
+
+### Frontend
+
+* React
+* Vite
+* TailwindCSS
+
+### Backend
+
+* FastAPI
+* Python
+* WebSockets
+
+### AI / Machine Learning
+
+* TensorFlow
+* MediaPipe
+* HuggingFace Models
+
+### Database
+
+* PostgreSQL
+
+---
+
+# 📂 Project Structure
+
+```
+accessai
+│
+├── frontend
+│   ├── src
+│   │   ├── components
+│   │   ├── pages
+│   │   ├── api
+│   │   └── context
+│
+├── backend
+│   ├── routers
+│   ├── models
+│   ├── ml
+│   ├── database.py
+│   └── main.py
+│
+└── docs
+```
+
+---
+
+# 🚀 Getting Started
+
+## 1️⃣ Clone Repository
+
+```bash
+git clone https://github.com/Kiran-Shetty-afk/accessai.git
+cd accessai
+```
+
+---
+
+# 🔧 Backend Setup
+
+```bash
+cd backend
+
 python -m venv venv
 venv\Scripts\activate
-```
 
-2. Install dependencies:
-
-```powershell
 pip install -r requirements.txt
-```
-
-3. Create `backend/.env` with values like:
-
-```dotenv
-DATABASE_URL=postgresql://postgres:yourpassword@localhost:5432/accessai
-HF_API_TOKEN=hf_your_token_here
-HF_TEXT_MODEL=Qwen/Qwen2.5-72B-Instruct:novita
-HF_VISION_MODEL=CohereLabs/aya-vision-32b:cohere
-SECRET_KEY=your_secret_key
-ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=1440
-```
-
-4. Start the backend:
-
-```powershell
 python -m uvicorn main:app --reload
 ```
 
-Backend URLs:
-- `http://127.0.0.1:8000/health`
-- `http://127.0.0.1:8000/docs`
+Backend will start at:
 
-## Frontend Setup
-
-Open a second terminal in [frontend](/D:/Projects/accessai/frontend).
-
-1. Create the frontend env file:
-
-```powershell
-Copy-Item .env.example .env
+```
+http://localhost:8000
 ```
 
-2. Install dependencies:
+API Documentation:
 
-```powershell
-npm install
+```
+http://localhost:8000/docs
 ```
 
-3. Start the frontend:
+---
 
-```powershell
-npm run dev
-```
+# 💻 Frontend Setup
 
-The frontend will use:
-- `VITE_API_BASE_URL=http://localhost:8000`
-- `VITE_WS_URL=ws://localhost:8000`
-
-## How To Run The Full App
-
-1. Start PostgreSQL
-2. Start the backend from [backend](/D:/Projects/accessai/backend)
-3. Start the frontend from [frontend](/D:/Projects/accessai/frontend)
-4. Open the Vite URL shown in the frontend terminal
-
-## How To Test
-
-### Backend Smoke Test
-
-From [backend](/D:/Projects/accessai/backend):
-
-```powershell
-python smoke_test.py
-```
-
-This verifies:
-- `GET /health`
-- `POST /auth/register`
-- `POST /auth/login`
-- `GET /auth/me`
-- `PUT /auth/preferences`
-- `POST /api/sign/predict`
-- `POST /api/simplify`
-- `POST /api/describe`
-- `POST /api/describe/url`
-- `POST /api/voice`
-
-### Manual API Testing
-
-Open:
-- `http://127.0.0.1:8000/docs`
-
-### Frontend Testing
-
-Once both servers are running, test these pages from the UI:
-- Home
-- Sign Language
-- Voice Navigator
-- Simplifier
-- Image Describer
-
-## Notes
-
-- `GET /` on the backend is expected to return `404`; use `/health` or `/docs`
-- Image hover descriptions use the backend route `/api/describe/url`
-- Sign detection uses both browser-side processing and the backend WebSocket at `/ws/sign`
-- `backend/.env` is intentionally ignored and should not be committed
-
-## Useful Commands
-
-Backend:
-
-```powershell
-cd D:\Projects\accessai\backend
-venv\Scripts\activate
-python -m uvicorn main:app --reload
-```
-
-Frontend:
-
-```powershell
-cd D:\Projects\accessai\frontend
+```bash
+cd frontend
 npm install
 npm run dev
 ```
 
-Smoke test:
+Frontend runs at:
 
-```powershell
-cd D:\Projects\accessai\backend
-venv\Scripts\activate
-python smoke_test.py
 ```
+http://localhost:5173
+```
+
+---
+
+
+# 🔗 Example API
+
+### Simplify Text
+
+**Request**
+
+```
+POST /api/simplify
+```
+
+```json
+{
+"text": "The government implemented a comprehensive environmental sustainability initiative.",
+"grade_level": 5
+}
+```
+
+**Response**
+
+```json
+{
+"simplified": "The government started a plan to protect the environment.",
+"word_count_before": 9,
+"word_count_after": 8,
+"cached": false
+}
+```
+
+---
+
+# 🧠 AI Models Used
+
+| Feature             | Model                   |
+| ------------------- | ----------------------- |
+| Text Simplification | FLAN-T5                 |
+| Image Captioning    | BLIP                    |
+| Speech Recognition  | Whisper                 |
+| Sign Language       | Custom TensorFlow model |
+
+---
+
+# 📈 Future Improvements
+
+* Support for multiple languages
+* Larger sign language dataset
+* Browser extension for universal accessibility
+* Mobile app version
+* Real-time translation
+
+---
+
+# 🤝 Contributing
+
+Contributions are welcome!
+
+1. Fork the repository
+2. Create a feature branch
+3. Commit changes
+4. Open a Pull Request
+
+---
+
+
+
+# ❤️ Vision
+
+> Technology should empower everyone, regardless of ability.
+
+AccessAI aims to build a **more inclusive internet** using AI.
